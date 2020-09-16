@@ -14,4 +14,9 @@ class SecurityStorage {
     final String result = await _channel.invokeMethod('authenticate');
     return result;
   }
+
+  static Future<String> other() async {
+    final String result = await _channel.invokeMethod('other');
+    return result;
+  }
 }

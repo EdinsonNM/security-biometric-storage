@@ -56,7 +56,7 @@ class _MyAppState extends State<MyApp> {
               MaterialButton(
                   child: Text("hola"),
                   onPressed: () async {
-                    var result = await SecurityStorage.authenticate();
+                    var result = await SecurityStorage.other();
                     print(result);
                   })
             ],
