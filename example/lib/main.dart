@@ -50,7 +50,17 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            children: [
+              Text('Running on: $_platformVersion\n'),
+              MaterialButton(
+                  child: Text("hola"),
+                  onPressed: () async {
+                    var result = await SecurityStorage.authenticate();
+                    print(result);
+                  })
+            ],
+          ),
         ),
       ),
     );

@@ -41,7 +41,8 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler {
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     when(call.method){
-      "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
+      "getPlatformVersion" -> result.success("test Android ${android.os.Build.VERSION.RELEASE}")
+      "authenticate" -> result.success("test authenticate")
       else -> result.notImplemented()
     }
   }
