@@ -10,13 +10,13 @@ class SecurityStorage {
     return version;
   }
 
-  static Future<String> authenticate() async {
-    final String result = await _channel.invokeMethod('authenticate');
+  static Future<String> encrypt() async {
+    final String result = await _channel.invokeMethod('encrypt');
     return result;
   }
 
-  static Future<String> other() async {
-    final String result = await _channel.invokeMethod('other');
+  static Future<String> decrypt() async {
+    final String result = await _channel.invokeMethod('decrypt');
     return result;
   }
 }
