@@ -90,7 +90,9 @@ private class CryptographyManagerImpl : CryptographyManager {
             setEncryptionPaddings(ENCRYPTION_PADDING)
             setKeySize(KEY_SIZE)
             setUserAuthenticationRequired(true)
-            setInvalidatedByBiometricEnrollment(true)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                setInvalidatedByBiometricEnrollment(true)
+            }
         }
 
         val keyGenParams = paramsBuilder.build()
@@ -98,6 +100,10 @@ private class CryptographyManagerImpl : CryptographyManager {
                 ANDROID_KEYSTORE)
         keyGenerator.init(keyGenParams)
         return keyGenerator.generateKey()
+    }
+    private fun removeStore(keyName: String){
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+        keyStore.deleteEntry(keyName)
     }
 
 }
