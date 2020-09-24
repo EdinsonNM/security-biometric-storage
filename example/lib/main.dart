@@ -16,19 +16,16 @@ class _MyAppState extends State<MyApp> {
   final keyController = TextEditingController();
   final valueController = TextEditingController();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final securityStorages = Map<String, SecurityStorage>();
+  var promptInfo;
   @override
   void initState() {
     super.initState();
-    init();
-  }
-
-  init() async {
-    await SecurityStorage.init(
-        androidPromptInfo: AndroidPromptInfo(
-            title: "Hola mundo",
-            description: "pacífico seguros",
-            negativeButton: "Cancelar",
-            subtitle: "loguin biometrico"));
+    promptInfo = AndroidPromptInfo(
+        title: "Ingresa tu huella digital para desbloquear",
+        description: "pacífico seguros",
+        negativeButton: "Cancelar",
+        subtitle: "loguin biometrico");
   }
 
   _displaySnackBar(BuildContext context, String message) {
@@ -72,21 +69,35 @@ class _MyAppState extends State<MyApp> {
                       )
                     ])),
                 RaisedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    if (keyController.value.text.isNotEmpty) {
+                      var name = keyController.value.text;
+                      var storage = await SecurityStorage.init(name,
+                          androidPromptInfo: promptInfo,
+                          options: StorageInitOptions());
+                      securityStorages[name] = storage;
+                      _displaySnackBar(context, 'init storage');
+                    }
+                  },
+                  child: Text('inicializar'),
+                ),
+                RaisedButton(
+                  onPressed: () async {
                     if (_formKey.currentState.validate()) {
-                      _displaySnackBar(context, 'Guardando data');
-
-                      SecurityStorage.write(
+                      var name = keyController.value.text;
+                      await securityStorages[name].write(
                           keyController.value.text, valueController.value.text);
+                      _displaySnackBar(context, 'Guardando data');
                     }
                   },
                   child: Text('guardar'),
                 ),
                 RaisedButton(
                   onPressed: () async {
-                    if (_formKey.currentState.validate()) {
-                      String value =
-                          await SecurityStorage.read(keyController.value.text);
+                    if (keyController.value.text.isNotEmpty) {
+                      var name = keyController.value.text;
+                      var value = await securityStorages[name]
+                          .read(keyController.value.text);
                       _displaySnackBar(context, "El valor es: $value");
                     }
                   },

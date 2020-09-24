@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 
+final _logger = Logger('SecurityStorage');
 enum CanAuthenticateResponse {
   success,
   errorHwUnavailable,
@@ -53,8 +55,8 @@ class AndroidPromptInfo {
       };
 }
 
-class StorageFileInitOptions {
-  StorageFileInitOptions({
+class StorageInitOptions {
+  StorageInitOptions({
     this.authenticationValidityDurationSeconds = 10,
     this.authenticationRequired = true,
   });
@@ -75,6 +77,9 @@ class StorageFileInitOptions {
 
 class SecurityStorage {
   static const MethodChannel _channel = const MethodChannel('security_storage');
+  String name;
+  AndroidPromptInfo androidPromptInfo;
+  SecurityStorage(this.name, this.androidPromptInfo);
 
   static Future<CanAuthenticateResponse> canAuthenticate() async {
     if (Platform.isAndroid) {
@@ -84,23 +89,47 @@ class SecurityStorage {
     return CanAuthenticateResponse.unsupported;
   }
 
-  static Future<void> init({
+  static Future<SecurityStorage> init(
+    String name, {
+    StorageInitOptions options,
     AndroidPromptInfo androidPromptInfo = AndroidPromptInfo.defaultValues,
   }) async {
-    _channel.invokeMethod<bool>(
-      'init',
-    );
+    assert(name != null);
+    try {
+      _channel.invokeMethod<bool>(
+        'init',
+        {
+          'name': name,
+          'options': options?.toJson() ?? StorageInitOptions().toJson(),
+        },
+      );
+      return SecurityStorage(
+        name,
+        androidPromptInfo,
+      );
+    } catch (e, stackTrace) {
+      _logger.warning(
+          'Error while initializing security storage.', e, stackTrace);
+    }
+    return null;
   }
 
-  static Future<String> read(String name) =>
-      _channel.invokeMethod<String>('read', <String, dynamic>{'name': name});
-
-  static Future<bool> delete(String name) =>
-      _channel.invokeMethod<bool>('delete', <String, dynamic>{
+  Future<String> read(String name) =>
+      _channel.invokeMethod<String>('read', <String, dynamic>{
         'name': name,
+        'androidPromptInfo': androidPromptInfo._toJson()
       });
 
-  static Future<void> write(String name, String content) =>
-      _channel.invokeMethod(
-          'write', <String, dynamic>{'name': name, 'content': content});
+  Future<bool> delete(String name) =>
+      _channel.invokeMethod<bool>('delete', <String, dynamic>{
+        'name': name,
+        'androidPromptInfo': androidPromptInfo._toJson()
+      });
+
+  Future<void> write(String name, String content) =>
+      _channel.invokeMethod('write', <String, dynamic>{
+        'name': name,
+        'content': content,
+        'androidPromptInfo': androidPromptInfo._toJson()
+      });
 }

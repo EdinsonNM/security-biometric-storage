@@ -1,7 +1,10 @@
 package com.pacificoseguros.securitystorage.security_storage
 
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
+import android.util.Log
+import com.squareup.moshi.JsonClass
 import java.nio.charset.Charset
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -9,19 +12,27 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-interface CryptographyManager {
 
+@JsonClass(generateAdapter = true)
+data class InitOptions(
+        val authenticationValidityDurationSeconds: Int = 30,
+        val authenticationRequired: Boolean = true
+)
+interface CryptographyManager {
+    companion object{
+        const val KeyPermanentlyInvalidatedExceptionCode=99
+    }
     /**
      * This method first gets or generates an instance of SecretKey and then initializes the Cipher
      * with the key. The secret key uses [ENCRYPT_MODE][Cipher.ENCRYPT_MODE] is used.
      */
-    fun getInitializedCipherForEncryption(keyName: String): Cipher
+    fun getInitializedCipherForEncryption(keyName: String,options:InitOptions, onSuccess: (Cipher)-> Unit, onError : (KeyPermanentlyInvalidatedException)-> Unit): Unit
 
     /**
      * This method first gets or generates an instance of SecretKey and then initializes the Cipher
      * with the key. The secret key uses [DECRYPT_MODE][Cipher.DECRYPT_MODE] is used.
      */
-    fun getInitializedCipherForDecryption(keyName: String, initializationVector: ByteArray): Cipher
+    fun getInitializedCipherForDecryption(keyName: String, initializationVector: ByteArray?, options:InitOptions, onSuccess: (Cipher)-> Unit, onError : (KeyPermanentlyInvalidatedException)-> Unit): Unit
 
     /**
      * The Cipher created with [getInitializedCipherForEncryption] is used here
@@ -46,23 +57,36 @@ private class CryptographyManagerImpl : CryptographyManager {
     private val ENCRYPTION_BLOCK_MODE = KeyProperties.BLOCK_MODE_GCM
     private val ENCRYPTION_PADDING = KeyProperties.ENCRYPTION_PADDING_NONE
     private val ENCRYPTION_ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
+    override fun getInitializedCipherForEncryption(keyName: String, options:InitOptions , onSuccess: (Cipher)-> Unit, onError : (KeyPermanentlyInvalidatedException)-> Unit) {
 
-    override fun getInitializedCipherForEncryption(keyName: String): Cipher {
-        val cipher = getCipher()
-        val secretKey = getOrCreateSecretKey(keyName)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-        return cipher
+        try {
+            val cipher = getCipher()
+            val secretKey = getOrCreateSecretKey(keyName, options)
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+            onSuccess(cipher)
+        }catch (e: KeyPermanentlyInvalidatedException)
+        {
+            onError(e)
+            //removeStore(keyName)
+        }
     }
 
-    override fun getInitializedCipherForDecryption(keyName: String, initializationVector: ByteArray): Cipher {
-        val cipher = getCipher()
-        val secretKey = getOrCreateSecretKey(keyName)
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, initializationVector))
-        return cipher
+    override fun getInitializedCipherForDecryption(keyName: String, initializationVector: ByteArray?, options:InitOptions , onSuccess: (Cipher)-> Unit, onError:(KeyPermanentlyInvalidatedException)->Unit) {
+        try {
+            val cipher = getCipher()
+            val secretKey = getOrCreateSecretKey(keyName, options)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, initializationVector))
+            onSuccess(cipher)
+        }catch (e: KeyPermanentlyInvalidatedException)
+        {
+            onError(e)
+            //removeStore(keyName)
+        }
     }
 
     override fun encryptData(plaintext: String, cipher: Cipher): EncryptedData {
         val ciphertext = cipher.doFinal(plaintext.toByteArray(Charset.forName("UTF-8")))
+        Log.d("Crypto==============>\n", ciphertext.toString())
         return EncryptedData(ciphertext,cipher.iv)
     }
 
@@ -76,7 +100,7 @@ private class CryptographyManagerImpl : CryptographyManager {
         return Cipher.getInstance(transformation)
     }
 
-    private fun getOrCreateSecretKey(keyName: String): SecretKey {
+    private fun getOrCreateSecretKey(keyName: String, options:InitOptions): SecretKey {
         // If Secretkey was previously created for that keyName, then grab and return it.
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
         keyStore.load(null) // Keystore must be loaded before it can be accessed
@@ -89,6 +113,7 @@ private class CryptographyManagerImpl : CryptographyManager {
             setBlockModes(ENCRYPTION_BLOCK_MODE)
             setEncryptionPaddings(ENCRYPTION_PADDING)
             setKeySize(KEY_SIZE)
+            //setUserAuthenticationValidityDurationSeconds(options.authenticationValidityDurationSeconds)
             setUserAuthenticationRequired(true)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                 setInvalidatedByBiometricEnrollment(true)

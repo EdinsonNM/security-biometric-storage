@@ -2,14 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="fa2f7927-6a5f-46a6-acd3-e07addea5410" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/build.gradle" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/src/main/kotlin/com/pacificoseguros/securitystorage/security_storage/CryptographyManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/kotlin/com/pacificoseguros/securitystorage/security_storage/CryptographyManager.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/src/main/kotlin/com/pacificoseguros/securitystorage/security_storage/SecurityStoragePlugin.kt" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/kotlin/com/pacificoseguros/securitystorage/security_storage/SecurityStoragePlugin.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/example/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/example/lib/main.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/security_storage.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/security_storage.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/security_storage_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/security_storage_test.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,13 +43,14 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
-    <state x="510" y="333" key="com.intellij.ide.util.TipDialog" timestamp="1600837962794">
-      <screen x="0" y="23" width="1680" height="960" />
+    <state x="510" y="334" key="com.intellij.ide.util.TipDialog" timestamp="1600947826914">
+      <screen x="0" y="23" width="1680" height="961" />
     </state>
     <state x="510" y="340" key="com.intellij.ide.util.TipDialog/0.0.1680.1050@0.0.1680.1050" timestamp="1600438957398" />
     <state x="1044" y="466" key="com.intellij.ide.util.TipDialog/0.0.3440.1440@0.0.3440.1440" timestamp="1600702376468" />
     <state x="510" y="333" key="com.intellij.ide.util.TipDialog/0.23.1680.956@0.23.1680.956" timestamp="1600404213306" />
     <state x="510" y="333" key="com.intellij.ide.util.TipDialog/0.23.1680.960@0.23.1680.960" timestamp="1600837962794" />
-    <state x="1044" y="454" key="com.intellij.ide.util.TipDialog/0.23.3440.1333@0.23.3440.1333" timestamp="1600791263379" />
+    <state x="510" y="334" key="com.intellij.ide.util.TipDialog/0.23.1680.961@0.23.1680.961" timestamp="1600947826914" />
+    <state x="1044" y="454" key="com.intellij.ide.util.TipDialog/0.23.3440.1333@0.23.3440.1333" timestamp="1600899005585" />
   </component>
 </project>
