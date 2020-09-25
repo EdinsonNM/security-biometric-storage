@@ -43,6 +43,7 @@ interface CryptographyManager {
      * The Cipher created with [getInitializedCipherForDecryption] is used here
      */
     fun decryptData(ciphertext: ByteArray, cipher: Cipher): String
+    fun removeStore(keyName:String): Unit
 
 }
 
@@ -126,8 +127,9 @@ private class CryptographyManagerImpl : CryptographyManager {
         keyGenerator.init(keyGenParams)
         return keyGenerator.generateKey()
     }
-    private fun removeStore(keyName: String){
+    override fun removeStore(keyName: String){
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+        keyStore.load(null)
         keyStore.deleteEntry(keyName)
     }
 

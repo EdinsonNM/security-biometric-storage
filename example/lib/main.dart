@@ -103,6 +103,18 @@ class _MyAppState extends State<MyApp> {
                   },
                   child: Text('Leer'),
                 ),
+                RaisedButton(
+                  onPressed: () async {
+                    if (keyController.value.text.isNotEmpty) {
+                      var name = keyController.value.text;
+                      await securityStorages[name]
+                          .delete(keyController.value.text);
+                      _displaySnackBar(
+                          context, "El valor es: $name fue eliminado");
+                    }
+                  },
+                  child: Text('Eliminar'),
+                ),
               ],
             ),
           ),

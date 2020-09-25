@@ -101,7 +101,7 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler, ActivityAw
       }
     }
     val getName = { requiredArgument<String>(PARAM_NAME) }
-
+    val getContent = { requiredArgument<String>(PARAM_WRITE_CONTENT) }
     fun withStorage(cb: StorageItem.() -> Unit) {
       val name = getName()
       storageItems[name]?.apply(cb) ?: return {
@@ -121,13 +121,14 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler, ActivityAw
         storageItems[getName()] = StorageItem(getName(), options)
       }
       "write" -> {
-        val name = getName()
         withStorage {
-          val getContent = { requiredArgument<String>(PARAM_WRITE_CONTENT) }
-
+          val name = getName()
+          val content= getContent()
           promptInfo = createPromptInfo(getAndroidPromptInfo())
-          biometricPrompt = createBiometricPrompt(getName(), true, {
-            result.success("success")
+          biometricPrompt = createBiometricPrompt({
+            processDataEncrypt(name,it.cryptoObject, content) { data ->
+              result.success(data)
+            }
           }, {
             result.error(it.error.toString(), it.message.toString(), it.errorDetails)
           }, getContent())
@@ -137,14 +138,34 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler, ActivityAw
         }
       }
       "read" -> {
+        val name = getName()
         withStorage {
           promptInfo = createPromptInfo(getAndroidPromptInfo())
-          biometricPrompt = createBiometricPrompt(getName(), false, {
-            result.success(it)
+          biometricPrompt = createBiometricPrompt({
+            processDataDecrypt(name,it.cryptoObject){ data ->
+              result.success(data)
+            }
           }, {
+
             result.error(it.error.toString(), it.message.toString(), it.errorDetails)
           })
           authenticateToDecrypt(getName()) {
+            result.error(it.error.toString(), it.message.toString(), it.errorDetails)
+          }
+        }
+      }
+      "delete"-> {
+        val name = getName()
+        withStorage {
+          promptInfo = createPromptInfo(getAndroidPromptInfo())
+          biometricPrompt = createBiometricPrompt({
+            storageItems.remove(name)
+            cryptographyManager.removeStore(name)
+            result.success(true)
+          }, {
+            result.error(it.error.toString(), it.message.toString(), it.errorDetails)
+          })
+          authenticateToRemove(name){
             result.error(it.error.toString(), it.message.toString(), it.errorDetails)
           }
         }
@@ -158,7 +179,7 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler, ActivityAw
   fun updateFingerPrintManager(fingerprintMgr: FingerprintManager){
     this.fingerprintMgr = fingerprintMgr
   }
-  private fun createBiometricPrompt(secretKeyName: String, readyToEncrypt: Boolean, onSuccess: (data: String) -> Unit, onError: ErrorCallback, data: String = ""): BiometricPrompt {
+  private fun createBiometricPrompt( onSuccess: (result: BiometricPrompt.AuthenticationResult) -> Unit, onError: ErrorCallback, data: String = ""): BiometricPrompt {
     val callback = object : BiometricPrompt.AuthenticationCallback() {
       override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
         super.onAuthenticationError(errorCode, errString)
@@ -176,12 +197,7 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler, ActivityAw
         Log.d(TAG, "Authentication was successful")
 
         ui(onError) {
-          val data = if(readyToEncrypt){
-            processDataEncrypt(secretKeyName, result.cryptoObject, data)
-          } else{
-            processDataDecrypt(secretKeyName, result.cryptoObject)
-          }
-          onSuccess(data)
+          onSuccess(result)
         }
       }
     }
@@ -239,8 +255,25 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler, ActivityAw
 
     }
   }
+  private fun authenticateToRemove(secretKeyName: String, onError: ErrorCallback) {
+    if (BiometricManager.from(this.context).canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS) {
 
-  private fun processDataEncrypt(secretKeyName: String, cryptoObject: BiometricPrompt.CryptoObject?, data: String) :String{
+        var initializationVector: ByteArray? = storageItems[secretKeyName]?.encryptedData?.initializationVector
+        var options = storageItems[secretKeyName]?.options
+
+        cryptographyManager.getInitializedCipherForDecryption(secretKeyName, initializationVector, options!!, {
+          biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(it))
+        }, {
+          Log.d(TAG, it.message)
+          ui(onError) {
+            onError(AuthenticationErrorInfo(CryptographyManager.KeyPermanentlyInvalidatedExceptionCode, it.message.toString(), it.cause!!.message))
+          }
+        })
+
+    }
+  }
+
+  private fun processDataEncrypt(secretKeyName: String, cryptoObject: BiometricPrompt.CryptoObject?, data: String, onSuccess: (String) -> Unit) {
 
     val encryptedData = cryptographyManager.encryptData(data, cryptoObject?.cipher!!)
     storageItems[secretKeyName]?.encryptedData = encryptedData
@@ -250,12 +283,14 @@ public class SecurityStoragePlugin: FlutterPlugin, MethodCallHandler, ActivityAw
     var prefs = PreferenceHelper.customPrefs(this.context, "security-storage")
     prefs[secretKeyName] = json
 
-    return String(encryptedData.ciphertext, Charset.forName("UTF-8"))
+    val data =  String(encryptedData.ciphertext, Charset.forName("UTF-8"))
+    onSuccess(data)
 
   }
-  private fun processDataDecrypt(secretKeyName: String, cryptoObject: BiometricPrompt.CryptoObject?) :String{
+  private fun processDataDecrypt(secretKeyName: String, cryptoObject: BiometricPrompt.CryptoObject?, onSuccess: (String) -> Unit) {
     var cipherText = storageItems[secretKeyName]?.encryptedData?.ciphertext
-    return cryptographyManager.decryptData(cipherText!!, cryptoObject?.cipher!!)
+    val data =  cryptographyManager.decryptData(cipherText!!, cryptoObject?.cipher!!)
+    onSuccess(data)
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
